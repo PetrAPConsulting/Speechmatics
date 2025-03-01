@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speechmatics Transcription</title>
+    <style>
+        :root {
+            --navy-blue: #003366;
+            --navy-blue-light: #1a4d80;
+            --navy-blue-dark: #00264d;
+            --white: #ffffff;
+            --light-gray: #f0f0f0;
+            --medium-gray: #cccccc;
+            --text-color: #333333;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-bottom: 20px;
+        }
+        
+        header {
+            background-color: var(--navy-blue);
+            color: var(--white);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-container {
+            margin-right: auto;
+        }
+        
+        .logo-container img {
+            height: 50px;
+            max-width: 100%;
+        }
+        
+        .header-content {
+            margin-right: auto;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .card {
+            background-color: var(--white);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--navy-blue);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .file-upload {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        
+        .file-upload-btn {
+            display: inline-block;
+            width: 100%;
+            padding: 0.8rem;
+            background-color: var(--navy-blue);
+            color: var(--white);
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .file-upload-btn:hover {
+            background-color: var(--navy-blue-light);
+        }
+        
+        .file-upload input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .file-info {
+            display: none;
+            padding: 0.8rem;
+            margin-top: 0.5rem;
+            background-color: var(--light-gray);
+            border-radius: 4px;
+        }
+        
+        .file-info.show {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-name {
+            word-break: break-all;
+            max-width: 80%;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--error-color);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        button {
+            display: block;
+            width: 100%;
+            padding: 0.8rem;
+            background-color: var(--navy-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--navy-blue-light);
+        }
+        
+        button:disabled {
+            background-color: var(--medium-gray);
+            cursor: not-allowed;
+        }
+        
+        .status {
+            display: none;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .status.show {
+            display: block;
+        }
+        
+        .status.error {
+            background-color: #ffebee;
+            color: var(--error-color);
+        }
+        
+        .status.success {
+            background-color: #e8f5e9;
+            color: var(--success-color);
+        }
+        
+        .status.info {
+            background-color: #e3f2fd;
+            color: #2196f3;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--navy-blue);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .result-area {
+            display: none;
+            background-color: var(--light-gray);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .result-area.show {
+            display: block;
+        }
+        
+        .download-btn {
+            margin-top: 1rem;
+            background-color: var(--success-color);
+        }
+        
+        .download-btn:hover {
+            background-color: #43a047;
+        }
+        
+        .remember-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .remember-option input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="https://www.apconsulting.cz/" target="_blank" class="logo-container">
+            <img src="https://static.wixstatic.com/media/12837a_c540017848c1460ca32e6c6366aea10f~mv2.png" alt="AP Consulting Logo">
+        </a>
+        <div class="header-content">
+            <h1>Speechmatics Transcription</h1>
+            <p>Convert speech to text using Speechmatics API</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2>API Settings</h2>
+            <label for="api-key">Speechmatics API Key</label>
+            <input type="password" id="api-key" placeholder="Enter your API key">
+            <div class="remember-option">
+                <input type="checkbox" id="remember-key" checked>
+                <label for="remember-key">Remember API key on this device</label>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Upload Audio</h2>
+            <div class="file-upload">
+                <div class="file-upload-btn">Choose Audio File</div>
+                <input type="file" id="audio-file" accept="audio/*">
+            </div>
+            
+            <div class="file-info" id="file-info">
+                <span class="file-name" id="file-name"></span>
+                <button class="delete-btn" id="delete-file">×</button>
+            </div>
+            
+            <label for="language">Select Language</label>
+            <select id="language">
+                <option value="cs">Česky</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+            </select>
+            
+            <button id="transcribe-btn" disabled>Transcribe Audio</button>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your audio file...</p>
+        </div>
+        
+        <div id="result-card" style="display: none;" class="card">
+            <h2>Transcription Result</h2>
+            <div class="result-area" id="result-text"></div>
+            <button class="download-btn" id="download-btn">Download as TXT</button>
+        </div>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const apiKeyInput = document.getElementById('api-key');
+        const audioFileInput = document.getElementById('audio-file');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const deleteFileBtn = document.getElementById('delete-file');
+        const languageSelect = document.getElementById('language');
+        const transcribeBtn = document.getElementById('transcribe-btn');
+        const statusDiv = document.getElementById('status');
+        const loadingDiv = document.getElementById('loading');
+        const resultCard = document.getElementById('result-card');
+        const resultText = document.getElementById('result-text');
+        const downloadBtn = document.getElementById('download-btn');
+        
+        // State variables
+        let selectedFile = null;
+        
+        // DOM elements for Remember Me functionality
+        const rememberKeyCheckbox = document.getElementById('remember-key');
+        
+        // Check if we have the API key in storage (either localStorage or sessionStorage)
+        const savedApiKey = localStorage.getItem('speechmaticsApiKey') || sessionStorage.getItem('speechmaticsApiKey');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+            // If key was in localStorage, ensure checkbox is checked
+            rememberKeyCheckbox.checked = localStorage.getItem('speechmaticsApiKey') !== null;
+        }
+        
+        // Event Listeners
+        audioFileInput.addEventListener('change', handleFileSelection);
+        deleteFileBtn.addEventListener('click', handleFileDelete);
+        transcribeBtn.addEventListener('click', handleTranscribe);
+        apiKeyInput.addEventListener('input', validateForm);
+        downloadBtn.addEventListener('click', downloadTranscription);
+        
+        // Save API key to storage when it changes
+        apiKeyInput.addEventListener('change', saveApiKey);
+        
+        // Function to save API key based on Remember Me checkbox
+        function saveApiKey() {
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (apiKey) {
+                if (rememberKeyCheckbox.checked) {
+                    // Save to localStorage (persists across browser sessions)
+                    localStorage.setItem('speechmaticsApiKey', apiKey);
+                    // Clean up any session storage version
+                    sessionStorage.removeItem('speechmaticsApiKey');
+                } else {
+                    // Save to sessionStorage (cleared when browser is closed)
+                    sessionStorage.setItem('speechmaticsApiKey', apiKey);
+                    // Clean up any local storage version
+                    localStorage.removeItem('speechmaticsApiKey');
+                }
+            } else {
+                // Clear both storages if the API key is empty
+                localStorage.removeItem('speechmaticsApiKey');
+                sessionStorage.removeItem('speechmaticsApiKey');
+            }
+            
+            validateForm();
+        }
+        
+        // Also update storage when the checkbox changes
+        rememberKeyCheckbox.addEventListener('change', saveApiKey);
+        
+        // Functions
+        function handleFileSelection(event) {
+            selectedFile = event.target.files[0];
+            
+            if (selectedFile) {
+                fileName.textContent = selectedFile.name;
+                fileInfo.classList.add('show');
+                validateForm();
+            }
+        }
+        
+        function handleFileDelete() {
+            audioFileInput.value = '';
+            selectedFile = null;
+            fileInfo.classList.remove('show');
+            transcribeBtn.disabled = true;
+        }
+        
+        function validateForm() {
+            transcribeBtn.disabled = !(apiKeyInput.value.trim() && selectedFile);
+        }
+        
+        async function handleTranscribe() {
+            // Hide any previous results
+            resultCard.style.display = 'none';
+            
+            // Show loading state
+            loadingDiv.classList.add('show');
+            transcribeBtn.disabled = true;
+            
+            // Clear status
+            statusDiv.className = 'status';
+            statusDiv.textContent = '';
+            
+            try {
+                // First, create a new job
+                const jobId = await createTranscriptionJob();
+                
+                // If job creation was successful, poll for the result
+                if (jobId) {
+                    showStatus('Job submitted successfully. Waiting for transcription...', 'info');
+                    
+                    // Poll for job status until it's done
+                    const result = await pollJobStatus(jobId);
+                    
+                    if (result) {
+                        displayTranscriptionResult(result);
+                    }
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                loadingDiv.classList.remove('show');
+                transcribeBtn.disabled = false;
+                validateForm();
+            }
+        }
+        
+        async function createTranscriptionJob() {
+            const apiKey = apiKeyInput.value.trim();
+            const language = languageSelect.value;
+            
+            // Create FormData with the configuration and audio file
+            const formData = new FormData();
+            
+            // Create the configuration object according to Speechmatics API
+            const config = {
+                type: "transcription",
+                transcription_config: {
+                    language: language,
+                    operating_point: "enhanced",  // Enhanced model
+                    diarization: "speaker"        // Speaker diarization
+                }
+            };
+            
+            formData.append('config', JSON.stringify(config));
+            formData.append('data_file', selectedFile);
+            
+            // Send the request to create a job
+            const response = await fetch('https://asr.api.speechmatics.com/v2/jobs/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.id;
+        }
+        
+        async function pollJobStatus(jobId) {
+            const apiKey = apiKeyInput.value.trim();
+            const maxAttempts = 30;  // Maximum number of polling attempts
+            const pollInterval = 5000;  // Poll every 5 seconds
+            
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                // Check job status
+                const response = await fetch(`https://asr.api.speechmatics.com/v2/jobs/${jobId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error checking job status! status: ${response.status}`);
+                }
+                
+                const jobData = await response.json();
+                
+                // If the job is done, get the transcript
+                if (jobData.job.status === 'done') {
+                    return await getTranscript(jobId);
+                }
+                
+                // If the job is rejected or otherwise failed
+                if (jobData.job.status === 'rejected') {
+                    throw new Error('Job was rejected by the service');
+                }
+                
+                // Wait before next polling attempt
+                await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+            
+            throw new Error('Transcription took too long. Please try again later.');
+        }
+        
+        async function getTranscript(jobId) {
+            const apiKey = apiKeyInput.value.trim();
+            
+            // Get the transcript in plain text format
+            const response = await fetch(`https://asr.api.speechmatics.com/v2/jobs/${jobId}/transcript?format=txt`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error getting transcript! status: ${response.status}`);
+            }
+            
+            return await response.text();
+        }
+        
+        function displayTranscriptionResult(text) {
+            resultText.textContent = text;
+            resultCard.style.display = 'block';
+            showStatus('Transcription completed successfully!', 'success');
+        }
+        
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status show ${type}`;
+        }
+        
+        function downloadTranscription() {
+            const text = resultText.textContent;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            // Get original filename and replace extension with .txt
+            let outputFilename = 'transcription.txt';
+            if (selectedFile) {
+                // Get original filename without extension
+                const originalName = selectedFile.name.replace(/\.[^/.]+$/, "");
+                outputFilename = `${originalName}.txt`;
+            }
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = outputFilename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
