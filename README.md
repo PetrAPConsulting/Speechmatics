@@ -1,7 +1,6 @@
 # Speechmatics Transcription Web App
 
 A simple, browser-based application for transcribing audio files using the Speechmatics API.
-![Speechmatics Transcription Web App](https://static.wixstatic.com/media/12837a_127559fe3a0846898706ae2f65d3acb1~mv2.jpg)
 ## Features
 
 - Record your meeting or conversation with client on phone
@@ -10,14 +9,14 @@ A simple, browser-based application for transcribing audio files using the Speec
 - Speaker diarization (identifies different speakers in transcription)
 - Enhanced transcription quality
 - Download transcripts as text files
-- Secure API key storage (optional local storage)
+- Encrypted API key storage (optional local storage)
 - Clean, responsive user interface
 
 ## How to Use
 
 1. Download the HTML file
 2. Open the HTML file in your web browser
-3. Enter your Speechmatics API key
+3. Enter your Speechmatics API key. API Key is tored locally but encrypted.
 4. Upload an audio file
 5. Select the language of the audio
 6. Click "Transcribe Audio"
@@ -39,7 +38,7 @@ This is a standalone HTML file with embedded JavaScript and CSS. No server setup
 
 ## Security Notes
 
-- Your API key can be stored in your browser's local storage if you select "Remember API key"
+- Your API key is stored encrypted in your browser's local storage if you select "Remember API key"
 - All processing is done via the Speechmatics API; no audio data is stored elsewhere
 - The application works entirely in your browser
 
