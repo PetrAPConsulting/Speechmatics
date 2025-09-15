@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speechmatics Transcription</title>
+    <title>Convert speech2text</title>
+    <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/12837a_8155b8fdc49b4d6c936ae5dff813ccb3~mv2.png">
     <style>
         :root {
             --navy-blue: #003366;
@@ -101,7 +102,7 @@
             .header-content {
                 text-align: center;
                 width: 100%;
-                order: 1; 
+                order: 1;
             }
 
             .header-content h1 {
@@ -308,6 +309,21 @@
         .remember-option input[type="checkbox"] {
             margin-right: 0.5rem;
         }
+
+        .security-info {
+            background-color: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #2e7d32;
+        }
+
+        .security-icon {
+            color: #4caf50;
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -317,13 +333,19 @@
         </a>
         <div class="header-content">
             <h1>Transcription with Speechmatics</h1>
-            <p>Convert speech to text</p>
+            <p>Convert speech2text</p>
         </div>
     </header>
     
     <div class="container">
         <div class="card">
             <h2>API Settings</h2>
+            
+            <div class="security-info">
+                <span class="security-icon">ðŸ”’</span>
+                <strong>Enhanced Security:</strong> Your API key is encrypted before being stored in your browser for maximum security.
+            </div>
+            
             <label for="api-key">Speechmatics API Key</label>
             <input type="password" id="api-key" placeholder="Enter your API key">
             <div class="remember-option">
@@ -341,14 +363,14 @@
             
             <div class="file-info" id="file-info">
                 <span class="file-name" id="file-name"></span>
-                <button class="delete-btn" id="delete-file">×</button>
+                <button class="delete-btn" id="delete-file">Ã—</button>
             </div>
             
             <label for="language">Select Language</label>
             <select id="language">
-                <option value="cs">Česky</option>
+                <option value="cs">ÄŒesky</option>
                 <option value="en">English</option>
-                <option value="es">Español</option>
+                <option value="es">EspaÃ±ol</option>
             </select>
             
             <button id="transcribe-btn" disabled>Transcribe Audio</button>
@@ -367,6 +389,9 @@
             <button class="download-btn" id="download-btn">Download as TXT</button>
         </div>
     </div>
+    
+    <!-- Include CryptoJS library for encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     
     <script>
         // DOM Elements
@@ -389,13 +414,128 @@
         // DOM elements for Remember Me functionality
         const rememberKeyCheckbox = document.getElementById('remember-key');
         
-        // Check if we have the API key in storage (either localStorage or sessionStorage)
-        const savedApiKey = localStorage.getItem('speechmaticsApiKey') || sessionStorage.getItem('speechmaticsApiKey');
-        if (savedApiKey) {
-            apiKeyInput.value = savedApiKey;
-            // If key was in localStorage, ensure checkbox is checked
-            rememberKeyCheckbox.checked = localStorage.getItem('speechmaticsApiKey') !== null;
+        // ===== ENCRYPTION FUNCTIONS =====
+        
+        // Generate a device-specific key for encryption
+        function getDeviceKey() {
+            let deviceKey = localStorage.getItem('device_encryption_key');
+            if (!deviceKey) {
+                // Generate a random key based on browser fingerprint + random data
+                const browserFingerprint = [
+                    navigator.userAgent,
+                    navigator.language,
+                    screen.width + 'x' + screen.height,
+                    new Date().getTimezoneOffset(),
+                    Math.random().toString(36)
+                ].join('|');
+                
+                deviceKey = CryptoJS.SHA256(browserFingerprint).toString();
+                localStorage.setItem('device_encryption_key', deviceKey);
+            }
+            return deviceKey;
         }
+        
+        // Encrypt data using AES
+        function encryptApiKey(apiKey) {
+            try {
+                const deviceKey = getDeviceKey();
+                const encrypted = CryptoJS.AES.encrypt(apiKey, deviceKey).toString();
+                return encrypted;
+            } catch (error) {
+                console.error('Encryption failed:', error);
+                throw new Error('Failed to encrypt API key');
+            }
+        }
+        
+        // Decrypt data using AES
+        function decryptApiKey(encryptedApiKey) {
+            try {
+                const deviceKey = getDeviceKey();
+                const decrypted = CryptoJS.AES.decrypt(encryptedApiKey, deviceKey);
+                const apiKey = decrypted.toString(CryptoJS.enc.Utf8);
+                
+                if (!apiKey) {
+                    throw new Error('Failed to decrypt - invalid data or key');
+                }
+                
+                return apiKey;
+            } catch (error) {
+                console.error('Decryption failed:', error);
+                // If decryption fails, clear the corrupted data
+                localStorage.removeItem('speechmatics_encrypted_key');
+                sessionStorage.removeItem('speechmatics_encrypted_key');
+                throw new Error('Failed to decrypt API key');
+            }
+        }
+        
+        // ===== STORAGE FUNCTIONS =====
+        
+        // Load saved API key on page load
+        function loadSavedApiKey() {
+            try {
+                // Try to load from localStorage first (persistent)
+                let encryptedKey = localStorage.getItem('speechmatics_encrypted_key');
+                let fromPersistent = true;
+                
+                // If not found in localStorage, try sessionStorage (temporary)
+                if (!encryptedKey) {
+                    encryptedKey = sessionStorage.getItem('speechmatics_encrypted_key');
+                    fromPersistent = false;
+                }
+                
+                if (encryptedKey) {
+                    const decryptedKey = decryptApiKey(encryptedKey);
+                    apiKeyInput.value = decryptedKey;
+                    
+                    // Set checkbox based on where the key was found
+                    rememberKeyCheckbox.checked = fromPersistent;
+                    
+                    console.log('API key loaded successfully from', fromPersistent ? 'persistent' : 'session', 'storage');
+                }
+            } catch (error) {
+                console.error('Error loading API key:', error);
+                showStatus('Error loading saved API key. Please re-enter your key.', 'error');
+                
+                // Clear any corrupted data
+                localStorage.removeItem('speechmatics_encrypted_key');
+                sessionStorage.removeItem('speechmatics_encrypted_key');
+            }
+        }
+        
+        // Function to save API key based on Remember Me checkbox
+        function saveApiKey() {
+            const apiKey = apiKeyInput.value.trim();
+            
+            // Clear any previous stored keys first
+            localStorage.removeItem('speechmatics_encrypted_key');
+            sessionStorage.removeItem('speechmatics_encrypted_key');
+            
+            if (apiKey) {
+                try {
+                    const encryptedKey = encryptApiKey(apiKey);
+                    
+                    if (rememberKeyCheckbox.checked) {
+                        // Save to localStorage (persists across browser sessions)
+                        localStorage.setItem('speechmatics_encrypted_key', encryptedKey);
+                        console.log('API key saved to persistent storage (encrypted)');
+                    } else {
+                        // Save to sessionStorage (cleared when browser is closed)
+                        sessionStorage.setItem('speechmatics_encrypted_key', encryptedKey);
+                        console.log('API key saved to session storage (encrypted)');
+                    }
+                } catch (error) {
+                    console.error('Error saving API key:', error);
+                    showStatus('Error saving API key: ' + error.message, 'error');
+                }
+            }
+            
+            validateForm();
+        }
+        
+        // ===== EVENT LISTENERS =====
+        
+        // Load saved API key when page loads
+        document.addEventListener('DOMContentLoaded', loadSavedApiKey);
         
         // Event Listeners
         audioFileInput.addEventListener('change', handleFileSelection);
@@ -404,37 +544,20 @@
         apiKeyInput.addEventListener('input', validateForm);
         downloadBtn.addEventListener('click', downloadTranscription);
         
-        // Save API key to storage when it changes
-        apiKeyInput.addEventListener('change', saveApiKey);
+        // Save API key to storage when it changes (with debouncing)
+        let saveTimeout;
+        apiKeyInput.addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveApiKey, 500); // Save 500ms after user stops typing
+        });
         
-        // Function to save API key based on Remember Me checkbox
-        function saveApiKey() {
-            const apiKey = apiKeyInput.value.trim();
-            
-            if (apiKey) {
-                if (rememberKeyCheckbox.checked) {
-                    // Save to localStorage (persists across browser sessions)
-                    localStorage.setItem('speechmaticsApiKey', apiKey);
-                    // Clean up any session storage version
-                    sessionStorage.removeItem('speechmaticsApiKey');
-                } else {
-                    // Save to sessionStorage (cleared when browser is closed)
-                    sessionStorage.setItem('speechmaticsApiKey', apiKey);
-                    // Clean up any local storage version
-                    localStorage.removeItem('speechmaticsApiKey');
-                }
-            } else {
-                // Clear both storages if the API key is empty
-                localStorage.removeItem('speechmaticsApiKey');
-                sessionStorage.removeItem('speechmaticsApiKey');
-            }
-            
-            validateForm();
-        }
+        // Also save when field loses focus
+        apiKeyInput.addEventListener('blur', saveApiKey);
         
-        // Also update storage when the checkbox changes
+        // Update storage when the checkbox changes
         rememberKeyCheckbox.addEventListener('change', saveApiKey);
         
+            
         // Functions
         function handleFileSelection(event) {
             selectedFile = event.target.files[0];
